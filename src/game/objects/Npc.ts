@@ -6,26 +6,25 @@ export interface NpcConfig {
   y: number;
   label: string;
   body: string;
-  color?: number;
+  /** spritesheet 텍스처 키. 기본 "npc-test". */
+  texture?: string;
 }
 
 export interface Npc {
   config: NpcConfig;
-  sprite: Phaser.GameObjects.Rectangle;
+  sprite: Phaser.GameObjects.Sprite;
   labelText: Phaser.GameObjects.Text;
 }
 
 export const NPC_INTERACT_RADIUS = 70;
 
 export function createNpc(scene: Phaser.Scene, config: NpcConfig): Npc {
-  const color = config.color ?? 0x55aaff;
-
-  const sprite = scene.add.rectangle(config.x, config.y, 28, 32, color);
-  sprite.setStrokeStyle(2, 0xffffff);
+  const textureKey = config.texture ?? "npc-test";
+  const sprite = scene.add.sprite(config.x, config.y, textureKey, 0);
   sprite.setDepth(10);
 
   const labelText = scene.add
-    .text(config.x, config.y - 28, config.label, {
+    .text(config.x, config.y - 30, config.label, {
       fontFamily: "monospace",
       fontSize: "12px",
       color: "#ffffff",

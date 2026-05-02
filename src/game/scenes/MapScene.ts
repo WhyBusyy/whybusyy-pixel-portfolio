@@ -6,8 +6,10 @@ const WORLD_W = 2048;
 const WORLD_H = 2048;
 const PLAYER_SPEED = 220;
 
+type Direction = "down" | "up" | "left" | "right";
+
 export class MapScene extends Phaser.Scene {
-  private player!: Phaser.GameObjects.Rectangle;
+  private player!: Phaser.Physics.Arcade.Sprite;
   private body!: Phaser.Physics.Arcade.Body;
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd?: {
@@ -20,6 +22,7 @@ export class MapScene extends Phaser.Scene {
   private npcs: Npc[] = [];
   private activeNpc: Npc | null = null;
   private hint!: Phaser.GameObjects.Text;
+  private facing: Direction = "down";
 
   constructor() {
     super("MapScene");
@@ -31,6 +34,9 @@ export class MapScene extends Phaser.Scene {
 
     this.drawGrid();
     this.drawTitle();
+
+    this.registerAnimations("player");
+    this.registerAnimations("npc-test");
 
     this.spawnPlayer();
     this.spawnNpcs();
@@ -56,17 +62,37 @@ export class MapScene extends Phaser.Scene {
 
   update() {
     this.updatePlayerVelocity();
+    this.updatePlayerAnimation();
     this.updateActiveNpc();
   }
 
+  private registerAnimations(textureKey: string) {
+    const directions: Direction[] = ["down", "up", "left", "right"];
+    directions.forEach((dir, i) => {
+      const key = `${textureKey}-${dir}`;
+      if (this.anims.exists(key)) return;
+      const start = i * 2;
+      this.anims.create({
+        key,
+        frames: this.anims.generateFrameNumbers(textureKey, {
+          start,
+          end: start + 1,
+        }),
+        frameRate: 6,
+        repeat: -1,
+      });
+    });
+  }
+
   private spawnPlayer() {
-    const rect = this.add.rectangle(WORLD_W / 2, WORLD_H / 2, 28, 32, 0xff5566);
-    rect.setStrokeStyle(2, 0xffffff);
-    rect.setDepth(20);
-    this.physics.add.existing(rect);
-    this.player = rect;
-    this.body = rect.body as Phaser.Physics.Arcade.Body;
+    const sprite = this.physics.add.sprite(WORLD_W / 2, WORLD_H / 2, "player", 0);
+    sprite.setDepth(20);
+    this.player = sprite;
+    this.body = sprite.body as Phaser.Physics.Arcade.Body;
     this.body.setCollideWorldBounds(true);
+    // hitbox는 발 부위로 (32x32 sprite의 하단 12px 정도)
+    this.body.setSize(20, 12);
+    this.body.setOffset(6, 18);
   }
 
   private spawnNpcs() {
@@ -76,10 +102,14 @@ export class MapScene extends Phaser.Scene {
         x: WORLD_W / 2 + 200,
         y: WORLD_H / 2,
         label: "Test NPC",
-        body: "이것은 Phase 1 placeholder NPC입니다. 다음 Phase에서 실제 콘텐츠 NPC들로 교체됩니다.",
-        color: 0x55aaff,
+        body: "이것은 Phase 1~2 placeholder NPC입니다. 다음 Phase에서 실제 콘텐츠 NPC들로 교체됩니다.",
       }),
     ];
+
+    // NPC도 idle 애니메이션 살짝 — 첫 frame 표시 후 down idle 무한 (정지 상태)
+    for (const npc of this.npcs) {
+      npc.sprite.setFrame(0);
+    }
   }
 
   private updatePlayerVelocity() {
@@ -96,6 +126,37 @@ export class MapScene extends Phaser.Scene {
 
     if (up) this.body.setVelocityY(-PLAYER_SPEED);
     else if (down) this.body.setVelocityY(PLAYER_SPEED);
+
+    // 대각선 속도 정규화
+    if ((left || right) && (up || down)) {
+      this.body.velocity.normalize().scale(PLAYER_SPEED);
+    }
+  }
+
+  private updatePlayerAnimation() {
+    const vx = this.body.velocity.x;
+    const vy = this.body.velocity.y;
+    const moving = Math.abs(vx) > 1 || Math.abs(vy) > 1;
+
+    if (!moving) {
+      this.player.anims.stop();
+      const idleFrame = { down: 0, up: 2, left: 4, right: 6 }[this.facing];
+      this.player.setFrame(idleFrame);
+      return;
+    }
+
+    let next: Direction;
+    if (Math.abs(vx) > Math.abs(vy)) {
+      next = vx > 0 ? "right" : "left";
+    } else {
+      next = vy > 0 ? "down" : "up";
+    }
+
+    this.facing = next;
+    const animKey = `player-${next}`;
+    if (this.player.anims.currentAnim?.key !== animKey) {
+      this.player.play(animKey);
+    }
   }
 
   private updateActiveNpc() {
@@ -153,7 +214,7 @@ export class MapScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(WORLD_W / 2, 132, "Phase 1 · NPC 상호작용", {
+      .text(WORLD_W / 2, 132, "Phase 2 · 캐릭터 walk cycle", {
         fontFamily: "monospace",
         fontSize: "14px",
         color: "#566080",
