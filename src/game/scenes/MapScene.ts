@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { eventBus } from "@/game/EventBus";
 import { createNpc, NPC_INTERACT_RADIUS, type Npc } from "@/game/objects/Npc";
+import { buildMap, type Building } from "@/game/world/Map";
 
 const WORLD_W = 2048;
 const WORLD_H = 2048;
@@ -32,14 +33,15 @@ export class MapScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, WORLD_W, WORLD_H);
     this.cameras.main.setBounds(0, 0, WORLD_W, WORLD_H);
 
-    this.drawGrid();
-    this.drawTitle();
+    const { collisionGroup, buildings } = buildMap(this, WORLD_W, WORLD_H);
 
     this.registerAnimations("player");
     this.registerAnimations("npc-test");
 
     this.spawnPlayer();
-    this.spawnNpcs();
+    this.spawnNpcs(buildings);
+
+    this.physics.add.collider(this.player, collisionGroup);
 
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
 
@@ -85,7 +87,13 @@ export class MapScene extends Phaser.Scene {
   }
 
   private spawnPlayer() {
-    const sprite = this.physics.add.sprite(WORLD_W / 2, WORLD_H / 2, "player", 0);
+    // 시작 위치: 사거리 중앙 살짝 위 (수평 도로 위쪽 사이드워크)
+    const sprite = this.physics.add.sprite(
+      WORLD_W / 2,
+      WORLD_H / 2 - 220,
+      "player",
+      0,
+    );
     sprite.setDepth(20);
     this.player = sprite;
     this.body = sprite.body as Phaser.Physics.Arcade.Body;
@@ -95,18 +103,21 @@ export class MapScene extends Phaser.Scene {
     this.body.setOffset(6, 18);
   }
 
-  private spawnNpcs() {
-    this.npcs = [
-      createNpc(this, {
-        id: "test-npc",
-        x: WORLD_W / 2 + 200,
-        y: WORLD_H / 2,
-        label: "Test NPC",
-        body: "이것은 Phase 1~2 placeholder NPC입니다. 다음 Phase에서 실제 콘텐츠 NPC들로 교체됩니다.",
-      }),
-    ];
+  private spawnNpcs(buildings: Building[]) {
+    // 각 건물 정문 앞에 NPC 1명씩 배치 (Phase 4에서 실제 콘텐츠로 교체)
+    const tints = [0xff8888, 0xaaffaa, 0xffd06b, 0x88ddff];
 
-    // NPC도 idle 애니메이션 살짝 — 첫 frame 표시 후 down idle 무한 (정지 상태)
+    this.npcs = buildings.map((b, i) =>
+      createNpc(this, {
+        id: `${b.type}-${i}`,
+        x: b.doorX,
+        y: b.doorY,
+        label: `${b.name} 점원`,
+        body: `안녕하세요. 여기는 ${b.name}입니다.\n\nPhase 3 placeholder NPC — 다음 Phase에서 임팩트/사이드 프로젝트 콘텐츠로 교체됩니다.`,
+        tint: tints[i % tints.length],
+      }),
+    );
+
     for (const npc of this.npcs) {
       npc.sprite.setFrame(0);
     }
@@ -198,38 +209,26 @@ export class MapScene extends Phaser.Scene {
     this.scene.resume();
   }
 
-  private drawGrid() {
-    const g = this.add.graphics({ lineStyle: { width: 1, color: 0x1f1f33 } });
-    for (let x = 0; x <= WORLD_W; x += 64) g.lineBetween(x, 0, x, WORLD_H);
-    for (let y = 0; y <= WORLD_H; y += 64) g.lineBetween(0, y, WORLD_W, y);
-  }
-
-  private drawTitle() {
-    this.add
-      .text(WORLD_W / 2, 96, "약국·카페 거리", {
-        fontFamily: "monospace",
-        fontSize: "28px",
-        color: "#88aaff",
-      })
-      .setOrigin(0.5);
-
-    this.add
-      .text(WORLD_W / 2, 132, "Phase 2 · 캐릭터 walk cycle", {
-        fontFamily: "monospace",
-        fontSize: "14px",
-        color: "#566080",
-      })
-      .setOrigin(0.5);
-  }
-
   private drawHud() {
     this.add
-      .text(16, 16, "← ↑ → ↓ / WASD 이동  ·  SPACE 상호작용", {
+      .text(16, 16, "약국·카페 거리  ·  Phase 3", {
         fontFamily: "monospace",
-        fontSize: "13px",
-        color: "#ffffff",
+        fontSize: "16px",
+        fontStyle: "bold",
+        color: "#88ddff",
+        backgroundColor: "#000000cc",
+        padding: { x: 12, y: 6 },
+      })
+      .setScrollFactor(0)
+      .setDepth(100);
+
+    this.add
+      .text(16, 50, "← ↑ → ↓ / WASD 이동  ·  SPACE 상호작용", {
+        fontFamily: "monospace",
+        fontSize: "12px",
+        color: "#cccccc",
         backgroundColor: "#000000aa",
-        padding: { x: 10, y: 6 },
+        padding: { x: 10, y: 5 },
       })
       .setScrollFactor(0)
       .setDepth(100);

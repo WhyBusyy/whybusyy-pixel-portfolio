@@ -8,6 +8,8 @@ export interface NpcConfig {
   body: string;
   /** spritesheet 텍스처 키. 기본 "npc-test". */
   texture?: string;
+  /** 기본 sprite 위에 곱해질 tint (0xrrggbb). */
+  tint?: number;
 }
 
 export interface Npc {
@@ -22,6 +24,7 @@ export function createNpc(scene: Phaser.Scene, config: NpcConfig): Npc {
   const textureKey = config.texture ?? "npc-test";
   const sprite = scene.add.sprite(config.x, config.y, textureKey, 0);
   sprite.setDepth(10);
+  if (config.tint !== undefined) sprite.setTint(config.tint);
 
   const labelText = scene.add
     .text(config.x, config.y - 30, config.label, {
