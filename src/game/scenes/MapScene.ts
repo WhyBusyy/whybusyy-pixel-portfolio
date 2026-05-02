@@ -47,7 +47,12 @@ export class MapScene extends Phaser.Scene {
 
     if (this.input.keyboard) {
       this.cursors = this.input.keyboard.createCursorKeys();
-      this.wasd = this.input.keyboard.addKeys("W,A,S,D") as typeof this.wasd;
+      this.wasd = this.input.keyboard.addKeys({
+        up: Phaser.Input.Keyboard.KeyCodes.W,
+        down: Phaser.Input.Keyboard.KeyCodes.S,
+        left: Phaser.Input.Keyboard.KeyCodes.A,
+        right: Phaser.Input.Keyboard.KeyCodes.D,
+      }) as typeof this.wasd;
       this.input.keyboard.on("keydown-SPACE", this.onSpacePressed, this);
     }
 
