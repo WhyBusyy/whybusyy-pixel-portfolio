@@ -26,6 +26,8 @@ export class MapScene extends Phaser.Scene {
   private hint!: Phaser.GameObjects.Text;
   private facing: Direction = "down";
   private joystick: JoystickVec = { x: 0, y: 0 };
+  private hudObjects: Phaser.GameObjects.GameObject[] = [];
+  private minimap?: Phaser.Cameras.Scene2D.Camera;
 
   constructor() {
     super("MapScene");
@@ -60,6 +62,7 @@ export class MapScene extends Phaser.Scene {
 
     this.drawHud();
     this.drawHint();
+    this.setupMinimap();
 
     const onModalClose = this.onModalClose.bind(this);
     const onJoystick = (v: JoystickVec) => {
@@ -224,7 +227,7 @@ export class MapScene extends Phaser.Scene {
   }
 
   private drawHud() {
-    this.add
+    const title = this.add
       .text(16, 16, "WhyBusyy · Pixel Portfolio", {
         fontFamily: "monospace",
         fontSize: "16px",
@@ -236,7 +239,7 @@ export class MapScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(100);
 
-    this.add
+    const controls = this.add
       .text(16, 50, "← ↑ → ↓ / WASD 이동  ·  SPACE 상호작용  ·  ESC 닫기", {
         fontFamily: "monospace",
         fontSize: "12px",
@@ -247,16 +250,23 @@ export class MapScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(100);
 
-    this.add
-      .text(16, 78, "NPC 6명과 대화해 임팩트·사이드 프로젝트·자기소개를 확인하세요.", {
-        fontFamily: "monospace",
-        fontSize: "11px",
-        color: "#888899",
-        backgroundColor: "#000000aa",
-        padding: { x: 10, y: 4 },
-      })
+    const hint = this.add
+      .text(
+        16,
+        78,
+        "NPC 6명과 대화해 임팩트·사이드 프로젝트·자기소개를 확인하세요.",
+        {
+          fontFamily: "monospace",
+          fontSize: "11px",
+          color: "#888899",
+          backgroundColor: "#000000aa",
+          padding: { x: 10, y: 4 },
+        },
+      )
       .setScrollFactor(0)
       .setDepth(100);
+
+    this.hudObjects.push(title, controls, hint);
   }
 
   private drawHint() {
@@ -271,5 +281,28 @@ export class MapScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(50)
       .setVisible(false);
+    this.hudObjects.push(this.hint);
+  }
+
+  private setupMinimap() {
+    const SIZE = 144;
+    const PAD = 16;
+    const place = () => {
+      this.minimap?.setPosition(this.scale.width - SIZE - PAD, PAD);
+    };
+
+    this.minimap = this.cameras
+      .add(this.scale.width - SIZE - PAD, PAD, SIZE, SIZE)
+      .setBounds(0, 0, WORLD_W, WORLD_H)
+      .setBackgroundColor(0x0e0e1ad8)
+      .setZoom(SIZE / WORLD_W); // 전체 월드가 들어가는 줌
+    this.minimap.startFollow(this.player, true, 1, 1);
+    this.minimap.ignore(this.hudObjects);
+    this.minimap.setRoundPixels(true);
+
+    this.scale.on(Phaser.Scale.Events.RESIZE, place);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scale.off(Phaser.Scale.Events.RESIZE, place);
+    });
   }
 }
