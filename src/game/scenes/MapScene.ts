@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { eventBus } from "@/game/EventBus";
+import { eventBus, type JoystickVec } from "@/game/EventBus";
 import { createNpc, NPC_INTERACT_RADIUS, type Npc } from "@/game/objects/Npc";
 import { buildMap } from "@/game/world/Map";
 import { buildNpcs } from "@/game/data/npcs";
@@ -25,6 +25,7 @@ export class MapScene extends Phaser.Scene {
   private activeNpc: Npc | null = null;
   private hint!: Phaser.GameObjects.Text;
   private facing: Direction = "down";
+  private joystick: JoystickVec = { x: 0, y: 0 };
 
   constructor() {
     super("MapScene");
@@ -61,10 +62,19 @@ export class MapScene extends Phaser.Scene {
     this.drawHint();
 
     const onModalClose = this.onModalClose.bind(this);
+    const onJoystick = (v: JoystickVec) => {
+      this.joystick = v;
+    };
+    const onAction = this.onSpacePressed.bind(this);
+
     eventBus.on("npc:close", onModalClose);
+    eventBus.on("input:joystick", onJoystick);
+    eventBus.on("input:action", onAction);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       eventBus.off("npc:close", onModalClose);
+      eventBus.off("input:joystick", onJoystick);
+      eventBus.off("input:action", onAction);
     });
   }
 
@@ -126,15 +136,23 @@ export class MapScene extends Phaser.Scene {
     const up = !!(this.cursors?.up?.isDown || this.wasd?.up?.isDown);
     const down = !!(this.cursors?.down?.isDown || this.wasd?.down?.isDown);
 
-    if (left) this.body.setVelocityX(-PLAYER_SPEED);
-    else if (right) this.body.setVelocityX(PLAYER_SPEED);
+    const keyboardActive = left || right || up || down;
 
-    if (up) this.body.setVelocityY(-PLAYER_SPEED);
-    else if (down) this.body.setVelocityY(PLAYER_SPEED);
+    if (keyboardActive) {
+      if (left) this.body.setVelocityX(-PLAYER_SPEED);
+      else if (right) this.body.setVelocityX(PLAYER_SPEED);
 
-    // 대각선 속도 정규화
-    if ((left || right) && (up || down)) {
-      this.body.velocity.normalize().scale(PLAYER_SPEED);
+      if (up) this.body.setVelocityY(-PLAYER_SPEED);
+      else if (down) this.body.setVelocityY(PLAYER_SPEED);
+
+      // 대각선 속도 정규화
+      if ((left || right) && (up || down)) {
+        this.body.velocity.normalize().scale(PLAYER_SPEED);
+      }
+    } else if (this.joystick.x !== 0 || this.joystick.y !== 0) {
+      // 가상 조이스틱
+      this.body.setVelocityX(this.joystick.x * PLAYER_SPEED);
+      this.body.setVelocityY(this.joystick.y * PLAYER_SPEED);
     }
   }
 

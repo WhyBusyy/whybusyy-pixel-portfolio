@@ -1,8 +1,15 @@
 import type { NpcConfig } from "@/game/objects/Npc";
 
+export interface JoystickVec {
+  x: number;
+  y: number;
+}
+
 type EventMap = {
   "npc:open": (npc: NpcConfig) => void;
   "npc:close": () => void;
+  "input:joystick": (vec: JoystickVec) => void;
+  "input:action": () => void;
 };
 
 type EventName = keyof EventMap;
