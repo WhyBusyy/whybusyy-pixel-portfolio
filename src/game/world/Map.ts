@@ -37,7 +37,7 @@ export function getBuildings(worldW: number, worldH: number): Building[] {
       type: "pharmacy",
       name: "행복 약국",
       doorX: cx - offsetFromRoadX - bw / 2,
-      doorY: cy - offsetFromRoadY - 16,
+      doorY: cy - offsetFromRoadY + 32,
     },
     {
       x: cx + offsetFromRoadX,
@@ -47,7 +47,7 @@ export function getBuildings(worldW: number, worldH: number): Building[] {
       type: "pharmacy",
       name: "건강 약국",
       doorX: cx + offsetFromRoadX + bw / 2,
-      doorY: cy - offsetFromRoadY - 16,
+      doorY: cy - offsetFromRoadY + 32,
     },
     {
       x: cx - offsetFromRoadX - bw,
@@ -147,7 +147,7 @@ export function buildMap(
     scene.physics.add.existing(collider, true);
     collisionGroup.add(collider);
 
-    // 건물 이름 라벨
+    // 건물 이름 라벨 — 건물 머리 위에 떠있고 항상 위 (Y-sort 무시)
     scene.add
       .text(b.x + b.width / 2, b.y - 18, b.name, {
         fontFamily: "monospace",
@@ -157,7 +157,7 @@ export function buildMap(
         padding: { x: 6, y: 3 },
       })
       .setOrigin(0.5)
-      .setDepth(5);
+      .setDepth(99999);
   }
 
   // 6. 가로수
@@ -173,7 +173,8 @@ export function buildMap(
 
 function drawBuilding(scene: Phaser.Scene, b: Building) {
   const g = scene.add.graphics();
-  g.setDepth(2);
+  // Y-sort: 건물 하단(b.y + b.height)을 depth로 — 캐릭터 발 위치(player.y)와 비교됨
+  g.setDepth(b.y + b.height);
 
   if (b.type === "pharmacy") {
     // 흰 외벽
@@ -229,7 +230,7 @@ function drawBuilding(scene: Phaser.Scene, b: Building) {
     g.fillRect(b.x + 24, b.y + b.height - 80, 40, 32);
     g.fillRect(b.x + b.width - 64, b.y + b.height - 80, 40, 32);
 
-    // 카페 라벨 (한글)
+    // 카페 라벨 (한글) — 간판 위에 그려짐, 건물과 같이 sort
     scene.add
       .text(b.x + b.width / 2, b.y + 38, "CAFE", {
         fontFamily: "monospace",
@@ -238,7 +239,7 @@ function drawBuilding(scene: Phaser.Scene, b: Building) {
         color: "#3a2616",
       })
       .setOrigin(0.5)
-      .setDepth(3);
+      .setDepth(b.y + b.height);
   }
 }
 
@@ -265,13 +266,13 @@ function drawTrees(
     positions.push({ x, y: cy + ROAD_WIDTH / 2 + SIDEWALK_WIDTH + 20 });
   }
 
-  const g = scene.add.graphics();
-  g.setDepth(3);
   for (const p of positions) {
-    // 줄기
+    // 나무마다 별도 graphics — Y-sort 적용
+    const g = scene.add.graphics();
+    g.setDepth(p.y + 8); // 줄기 하단(p.y + 8)을 발 위치로
+
     g.fillStyle(0x4a2a1a);
     g.fillRect(p.x - 3, p.y - 4, 6, 14);
-    // 나뭇잎
     g.fillStyle(0x2a6a2a);
     g.fillCircle(p.x, p.y - 12, 14);
     g.fillStyle(0x3d8a3d);

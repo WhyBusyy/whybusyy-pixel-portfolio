@@ -53,8 +53,11 @@ export const NPC_INTERACT_RADIUS = 70;
 
 export function createNpc(scene: Phaser.Scene, config: NpcConfig): Npc {
   const textureKey = config.texture ?? "npc-test";
+  // Y-sort: 발 위치(sprite.y + 16)를 depth로 — 건물·나무와 자연스럽게 occlusion
+  const baseDepth = config.y + 16;
+
   const sprite = scene.add.sprite(config.x, config.y, textureKey, 0);
-  sprite.setDepth(10);
+  sprite.setDepth(baseDepth);
   if (config.tint !== undefined) sprite.setTint(config.tint);
 
   const labelText = scene.add
@@ -66,7 +69,7 @@ export function createNpc(scene: Phaser.Scene, config: NpcConfig): Npc {
       padding: { x: 6, y: 3 },
     })
     .setOrigin(0.5)
-    .setDepth(10);
+    .setDepth(baseDepth);
 
   // "!" 인디케이터 (대화 가능 표시)
   const exclamation = scene.add
@@ -79,7 +82,7 @@ export function createNpc(scene: Phaser.Scene, config: NpcConfig): Npc {
       strokeThickness: 4,
     })
     .setOrigin(0.5)
-    .setDepth(11);
+    .setDepth(baseDepth);
 
   scene.tweens.add({
     targets: exclamation,

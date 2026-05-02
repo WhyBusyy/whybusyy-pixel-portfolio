@@ -82,6 +82,8 @@ export class MapScene extends Phaser.Scene {
     this.updatePlayerVelocity();
     this.updatePlayerAnimation();
     this.updateActiveNpc();
+    // Y-sort: 캐릭터 발 위치를 depth로 사용 → 건물·나무와 자연스럽게 occlusion
+    if (this.player) this.player.setDepth(this.player.y + 16);
   }
 
   private registerAnimations(textureKey: string) {
