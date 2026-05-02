@@ -46,6 +46,7 @@ export interface Npc {
   config: NpcConfig;
   sprite: Phaser.GameObjects.Sprite;
   labelText: Phaser.GameObjects.Text;
+  exclamation: Phaser.GameObjects.Text;
 }
 
 export const NPC_INTERACT_RADIUS = 70;
@@ -67,5 +68,27 @@ export function createNpc(scene: Phaser.Scene, config: NpcConfig): Npc {
     .setOrigin(0.5)
     .setDepth(10);
 
-  return { config, sprite, labelText };
+  // "!" 인디케이터 (대화 가능 표시)
+  const exclamation = scene.add
+    .text(config.x, config.y - 52, "!", {
+      fontFamily: "monospace",
+      fontSize: "20px",
+      fontStyle: "bold",
+      color: "#ffeb3b",
+      stroke: "#1a1a2e",
+      strokeThickness: 4,
+    })
+    .setOrigin(0.5)
+    .setDepth(11);
+
+  scene.tweens.add({
+    targets: exclamation,
+    y: { from: config.y - 52, to: config.y - 60 },
+    duration: 700,
+    yoyo: true,
+    repeat: -1,
+    ease: "Sine.easeInOut",
+  });
+
+  return { config, sprite, labelText, exclamation };
 }
