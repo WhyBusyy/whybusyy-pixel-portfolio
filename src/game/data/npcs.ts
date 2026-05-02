@@ -103,11 +103,11 @@ export function buildNpcs(worldW: number, worldH: number): NpcConfig[] {
         },
       ],
     },
-    // 5. 거리 위 사이드 프로젝트 — 루틴 체크
+    // 5. 거리 위 사이드 프로젝트 — 루틴 체크 (사거리 우하 사이드워크 코너)
     {
       id: "side-routine-check",
-      x: cx + 280,
-      y: cy + 220,
+      x: cx + 100,
+      y: cy + 100,
       label: "산책자 · 루틴 메이커",
       tint: 0xff77cc,
       kind: "side-project",
@@ -128,11 +128,11 @@ export function buildNpcs(worldW: number, worldH: number): NpcConfig[] {
         },
       ],
     },
-    // 6. 거리 위 OSS — facebook/lexical PR + tiptap-editor-kit
+    // 6. 거리 위 OSS — facebook/lexical PR + tiptap-editor-kit (사거리 좌상 사이드워크 코너)
     {
       id: "oss",
-      x: cx - 280,
-      y: cy - 240,
+      x: cx - 100,
+      y: cy - 100,
       label: "행인 · 오픈소스",
       tint: 0xb19cff,
       kind: "oss",
