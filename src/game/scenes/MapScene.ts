@@ -1,4 +1,6 @@
 import Phaser from "phaser";
+import { eventBus } from "@/game/EventBus";
+import { createNpc, NPC_INTERACT_RADIUS, type Npc } from "@/game/objects/Npc";
 
 const WORLD_W = 2048;
 const WORLD_H = 2048;
@@ -15,6 +17,10 @@ export class MapScene extends Phaser.Scene {
     right: Phaser.Input.Keyboard.Key;
   };
 
+  private npcs: Npc[] = [];
+  private activeNpc: Npc | null = null;
+  private hint!: Phaser.GameObjects.Text;
+
   constructor() {
     super("MapScene");
   }
@@ -26,24 +32,57 @@ export class MapScene extends Phaser.Scene {
     this.drawGrid();
     this.drawTitle();
 
-    const rect = this.add.rectangle(WORLD_W / 2, WORLD_H / 2, 28, 32, 0xff5566);
-    rect.setStrokeStyle(2, 0xffffff);
-    this.physics.add.existing(rect);
-    this.player = rect;
-    this.body = rect.body as Phaser.Physics.Arcade.Body;
-    this.body.setCollideWorldBounds(true);
+    this.spawnPlayer();
+    this.spawnNpcs();
 
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
 
     if (this.input.keyboard) {
       this.cursors = this.input.keyboard.createCursorKeys();
       this.wasd = this.input.keyboard.addKeys("W,A,S,D") as typeof this.wasd;
+      this.input.keyboard.on("keydown-SPACE", this.onSpacePressed, this);
     }
 
     this.drawHud();
+    this.drawHint();
+
+    const onModalClose = this.onModalClose.bind(this);
+    eventBus.on("npc:close", onModalClose);
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      eventBus.off("npc:close", onModalClose);
+    });
   }
 
   update() {
+    this.updatePlayerVelocity();
+    this.updateActiveNpc();
+  }
+
+  private spawnPlayer() {
+    const rect = this.add.rectangle(WORLD_W / 2, WORLD_H / 2, 28, 32, 0xff5566);
+    rect.setStrokeStyle(2, 0xffffff);
+    rect.setDepth(20);
+    this.physics.add.existing(rect);
+    this.player = rect;
+    this.body = rect.body as Phaser.Physics.Arcade.Body;
+    this.body.setCollideWorldBounds(true);
+  }
+
+  private spawnNpcs() {
+    this.npcs = [
+      createNpc(this, {
+        id: "test-npc",
+        x: WORLD_W / 2 + 200,
+        y: WORLD_H / 2,
+        label: "Test NPC",
+        body: "이것은 Phase 1 placeholder NPC입니다. 다음 Phase에서 실제 콘텐츠 NPC들로 교체됩니다.",
+        color: 0x55aaff,
+      }),
+    ];
+  }
+
+  private updatePlayerVelocity() {
     if (!this.body) return;
     this.body.setVelocity(0);
 
@@ -57,6 +96,45 @@ export class MapScene extends Phaser.Scene {
 
     if (up) this.body.setVelocityY(-PLAYER_SPEED);
     else if (down) this.body.setVelocityY(PLAYER_SPEED);
+  }
+
+  private updateActiveNpc() {
+    let nearest: Npc | null = null;
+    let nearestDist = Infinity;
+
+    for (const npc of this.npcs) {
+      const dist = Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        npc.sprite.x,
+        npc.sprite.y,
+      );
+      if (dist < NPC_INTERACT_RADIUS && dist < nearestDist) {
+        nearest = npc;
+        nearestDist = dist;
+      }
+    }
+
+    this.activeNpc = nearest;
+
+    if (nearest) {
+      this.hint
+        .setVisible(true)
+        .setText(`SPACE — ${nearest.config.label}`)
+        .setPosition(nearest.sprite.x, nearest.sprite.y - 56);
+    } else {
+      this.hint.setVisible(false);
+    }
+  }
+
+  private onSpacePressed() {
+    if (!this.activeNpc) return;
+    eventBus.emit("npc:open", this.activeNpc.config);
+    this.scene.pause();
+  }
+
+  private onModalClose() {
+    this.scene.resume();
   }
 
   private drawGrid() {
@@ -75,7 +153,7 @@ export class MapScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(WORLD_W / 2, 132, "Phase 0 · placeholder world", {
+      .text(WORLD_W / 2, 132, "Phase 1 · NPC 상호작용", {
         fontFamily: "monospace",
         fontSize: "14px",
         color: "#566080",
@@ -85,7 +163,7 @@ export class MapScene extends Phaser.Scene {
 
   private drawHud() {
     this.add
-      .text(16, 16, "← ↑ → ↓  /  WASD 로 이동", {
+      .text(16, 16, "← ↑ → ↓ / WASD 이동  ·  SPACE 상호작용", {
         fontFamily: "monospace",
         fontSize: "13px",
         color: "#ffffff",
@@ -94,5 +172,19 @@ export class MapScene extends Phaser.Scene {
       })
       .setScrollFactor(0)
       .setDepth(100);
+  }
+
+  private drawHint() {
+    this.hint = this.add
+      .text(0, 0, "", {
+        fontFamily: "monospace",
+        fontSize: "12px",
+        color: "#1a1a2e",
+        backgroundColor: "#88ddff",
+        padding: { x: 8, y: 4 },
+      })
+      .setOrigin(0.5)
+      .setDepth(50)
+      .setVisible(false);
   }
 }
