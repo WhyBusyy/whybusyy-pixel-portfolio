@@ -1,7 +1,8 @@
 import Phaser from "phaser";
 import { eventBus } from "@/game/EventBus";
 import { createNpc, NPC_INTERACT_RADIUS, type Npc } from "@/game/objects/Npc";
-import { buildMap, type Building } from "@/game/world/Map";
+import { buildMap } from "@/game/world/Map";
+import { buildNpcs } from "@/game/data/npcs";
 
 const WORLD_W = 2048;
 const WORLD_H = 2048;
@@ -33,13 +34,13 @@ export class MapScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, WORLD_W, WORLD_H);
     this.cameras.main.setBounds(0, 0, WORLD_W, WORLD_H);
 
-    const { collisionGroup, buildings } = buildMap(this, WORLD_W, WORLD_H);
+    const { collisionGroup } = buildMap(this, WORLD_W, WORLD_H);
 
     this.registerAnimations("player");
     this.registerAnimations("npc-test");
 
     this.spawnPlayer();
-    this.spawnNpcs(buildings);
+    this.spawnNpcs();
 
     this.physics.add.collider(this.player, collisionGroup);
 
@@ -108,21 +109,9 @@ export class MapScene extends Phaser.Scene {
     this.body.setOffset(6, 18);
   }
 
-  private spawnNpcs(buildings: Building[]) {
-    // 각 건물 정문 앞에 NPC 1명씩 배치 (Phase 4에서 실제 콘텐츠로 교체)
-    const tints = [0xff8888, 0xaaffaa, 0xffd06b, 0x88ddff];
-
-    this.npcs = buildings.map((b, i) =>
-      createNpc(this, {
-        id: `${b.type}-${i}`,
-        x: b.doorX,
-        y: b.doorY,
-        label: `${b.name} 점원`,
-        body: `안녕하세요. 여기는 ${b.name}입니다.\n\nPhase 3 placeholder NPC — 다음 Phase에서 임팩트/사이드 프로젝트 콘텐츠로 교체됩니다.`,
-        tint: tints[i % tints.length],
-      }),
-    );
-
+  private spawnNpcs() {
+    const configs = buildNpcs(WORLD_W, WORLD_H);
+    this.npcs = configs.map((c) => createNpc(this, c));
     for (const npc of this.npcs) {
       npc.sprite.setFrame(0);
     }
@@ -216,7 +205,7 @@ export class MapScene extends Phaser.Scene {
 
   private drawHud() {
     this.add
-      .text(16, 16, "약국·카페 거리  ·  Phase 3", {
+      .text(16, 16, "WhyBusyy · Pixel Portfolio", {
         fontFamily: "monospace",
         fontSize: "16px",
         fontStyle: "bold",
@@ -228,12 +217,23 @@ export class MapScene extends Phaser.Scene {
       .setDepth(100);
 
     this.add
-      .text(16, 50, "← ↑ → ↓ / WASD 이동  ·  SPACE 상호작용", {
+      .text(16, 50, "← ↑ → ↓ / WASD 이동  ·  SPACE 상호작용  ·  ESC 닫기", {
         fontFamily: "monospace",
         fontSize: "12px",
         color: "#cccccc",
         backgroundColor: "#000000aa",
         padding: { x: 10, y: 5 },
+      })
+      .setScrollFactor(0)
+      .setDepth(100);
+
+    this.add
+      .text(16, 78, "NPC 6명과 대화해 임팩트·사이드 프로젝트·자기소개를 확인하세요.", {
+        fontFamily: "monospace",
+        fontSize: "11px",
+        color: "#888899",
+        backgroundColor: "#000000aa",
+        padding: { x: 10, y: 4 },
       })
       .setScrollFactor(0)
       .setDepth(100);

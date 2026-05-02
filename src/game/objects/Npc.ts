@@ -1,15 +1,45 @@
 import Phaser from "phaser";
 
+export type NpcKind =
+  | "case-study"
+  | "side-project"
+  | "oss"
+  | "about"
+  | "placeholder";
+
+export type NpcLinkIcon = "github" | "npm" | "appstore" | "external" | "email";
+
+export interface NpcLink {
+  label: string;
+  url: string;
+  icon?: NpcLinkIcon;
+}
+
+export interface NpcMetric {
+  value: string;
+  label: string;
+}
+
 export interface NpcConfig {
   id: string;
   x: number;
   y: number;
+  /** 캐릭터 머리 위 라벨. */
   label: string;
+  /** 모달 본문 (줄바꿈 포함 가능). */
   body: string;
   /** spritesheet 텍스처 키. 기본 "npc-test". */
   texture?: string;
   /** 기본 sprite 위에 곱해질 tint (0xrrggbb). */
   tint?: number;
+  // 콘텐츠 메타데이터 (모달에서 사용)
+  kind?: NpcKind;
+  /** 모달 상단 작은 라벨 (예: "Frontend Developer · 2025 상반기"). */
+  role?: string;
+  /** 모달 타이틀 — label과 다를 수 있음. */
+  title?: string;
+  metrics?: NpcMetric[];
+  links?: NpcLink[];
 }
 
 export interface Npc {
