@@ -6,7 +6,7 @@
 
 캐릭터를 조종해 약국·카페가 있는 거리를 돌아다니며 NPC 6명과 상호작용해 경력 임팩트·사이드 프로젝트·자기소개를 발견하는 2D RPG 형식의 포트폴리오.
 
-기존 미니멀 포트폴리오([portfolio-beta-olive-83.vercel.app](https://portfolio-beta-olive-83.vercel.app))와 **병행 운영**합니다.
+기존 미니멀 포트폴리오([portfolio.whybusyy.com](https://portfolio.whybusyy.com))와 **병행 운영**합니다.
 
 ## Stack
 

@@ -88,7 +88,7 @@ export function buildNpcs(worldW: number, worldH: number): NpcConfig[] {
       links: [
         {
           label: "Portfolio",
-          url: "https://portfolio-beta-olive-83.vercel.app",
+          url: "https://portfolio.whybusyy.com",
           icon: "external",
         },
         {
